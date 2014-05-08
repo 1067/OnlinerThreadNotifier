@@ -2,7 +2,7 @@ Parse.Cloud.job("checkForum", function(request, status) {
   var _ = require("underscore");
 
   var getEmailList = function() {
-    return _.foldl(request.params.emails, function(acc, item) {return acc + ", " + item;});
+    return _.foldl(request.params.emails, function(acc, item) {return acc + ", " + item;}, "");
   };
 
   var sendEmail = function(html) {
@@ -60,30 +60,29 @@ Parse.Cloud.job("checkForum", function(request, status) {
     });
   };
 
-  Parse.Cloud.httpRequest({
+  var getParsed = Parse.Cloud.httpRequest({
     url: url
-  }).then(
-    function(httpResponse) {
-      var parsed = parseLinks(httpResponse.text);    
-
-      new Parse.Query("CommentLink")
-        .containedIn("content", parsed)
-        .find()
-        .then(function(results) {
-          var mapped = _.map(results, function(item) {return item.get("content");});
-          var newItems = _.filter(parsed, function(item) {return _.contains(mapped, item) === false;});
-
-          if (0 < newItems.length) {
-            saveAndSend(newItems);
-          } else {
-            status.success("nothing changed");
-          }
-        }, function() {
-          status.error("can't retrieve items");
-        });
-    }
-  ).fail(function(httpResponse) {
+  }).then(function(httpResponse) {
+    return parseLinks(httpResponse.text);
+  }, function(httpResponse) {
     console.error('Request failed with response code ' + httpResponse.status);
     status.error('Request failed with response code ' + httpResponse.status);
+  });
+
+  var findSaved = getParsed.then(function(parsed) {
+    return new Parse.Query("CommentLink").containedIn("content", parsed).find();
+  });
+
+  Parse.Promise.when(
+    getParsed, findSaved
+  ).then(function(parsed, saved) {
+    var mapped = _.map(saved, function(item) {return item.get("content");});
+    var newItems = _.filter(parsed, function(item) {return _.contains(mapped, item) === false;});
+
+    if (0 < newItems.length) {
+      saveAndSend(newItems);
+    } else {
+      status.success("nothing changed");
+    }
   });
 });
