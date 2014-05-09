@@ -31,17 +31,27 @@ Parse.Cloud.job("checkForum", function(request, status) {
   };
 
   var parseLinks = function(html) {
-    return html.match(/<a.*?href="#p.*?".*?>#<\/a>/g);
+    var regexAnchaors = /<a.*?href="#p.*?".*?>#<\/a>/g;
+    var regexLink = /href.*?=.*?[',"]#.*?[',"]/g;
+
+    return _.map(html.match(regexAnchaors), function(item) {
+      var href = item.match(regexLink)[0];
+      return href.substring(6, href.length-1);
+    });
   };
 
   var url = request.params.forumUrl;
 
   var combineHtml = function(links) {
-    return _.foldl(links, function(acc, item) {
-      var href = item.match(/href.*?=.*?[',"]#.*?[',"]/g)[0];
-      href = href.substring(6, href.length-1);
+    var template = "<%= obj.acc %>" + 
+      "<p>" +
+        "<a href='<%= obj.href %>'>" + 
+          "<%= obj.name %>" +
+        "</a>" + 
+      "</p>";
 
-      return acc + '<p><a href="' + url + href + '"">' + href + '</a></p>';
+    return _.foldl(links, function(acc, link) {
+      return _.template(template, {acc: acc, href: url + link, name: link});      
     }, "");
   };
 
@@ -51,7 +61,7 @@ Parse.Cloud.job("checkForum", function(request, status) {
     var toAdd = _.map(newItems, function(item) {return new CommentLink({content: item});});
 
     CommentLink.saveAll(toAdd, {
-      success: function(list) {
+      success: function() {
         sendEmail(combineHtml(newItems));
       },
       error: function() {
@@ -71,6 +81,8 @@ Parse.Cloud.job("checkForum", function(request, status) {
 
   var findSaved = getParsed.then(function(parsed) {
     return new Parse.Query("CommentLink").containedIn("content", parsed).find();
+  }, function() {
+    status.error("can't retrieve saved items");
   });
 
   Parse.Promise.when(
