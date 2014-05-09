@@ -5,7 +5,7 @@ exports.getContainedIn = function(values) {
     .containedIn("postId", _.pluck(values, "postId"))
     .find()
     .then(function(saved) {
-      return _.map(saved, function(item) {return _.pick(item.toJSON(), ["postId", "userName"]);});
+      return _.map(saved, function(item) {return _.pick(item.toJSON(), ["postId", "userName", "message"]);});
     });
 };
 
@@ -33,7 +33,7 @@ exports.saveOnlyNew = function(values) {
   
   return self.getContainedIn(values).then(function(saved) {
     var savedIds = _.pluck(saved, "postId");
-    var newItems = _.filter(values, function(item) { return _.contains(savedIds, item.postId) === false; });
+    var newItems = _.filter(values, function(item) {return _.contains(savedIds, item.postId) === false;});
 
     return self.save(newItems);
   });
