@@ -1,25 +1,45 @@
-exports.biuldLinks = function(baseUrl, relatedLinks) {
-  var template = "<%= obj.acc %>" + 
-    "<p>" + 
-      "<table cellspacing='0' cellpadding='0' style='border: none;width: 100%;''>" + 
-        "<colgroup>" +
-          "<col span='1' style='width: 100px;'>" +
-        "</colgroup>" +
-        "<tr style='background: #303030;color: #eeeeee;collapse:true;'>" +
-          "<td><span style='margin-left: 10px;'><%= obj.relatedLink.userName %> :</span></td>" +
-          "<td><a style='color:#d1d1f1;' href='<%= obj.baseUrl %>#<%= obj.relatedLink.postId %>' target='_blank'>" + 
-            "#<%= obj.relatedLink.postId %>" +
-          "</a></td>" + 
-        "</tr>" +
-        "<tr>" +
-          "<td colspan='2'><div style='margin-left: 10px;'><%= relatedLink.message %></div></td>" +
-        "</tr>" +
-      "</table>"+
-    "</p>";
+var commonTemplate = "" + 
+  "<table style='width:100%;border-collapse:collapse;'>" +
+    "<tbody>" + 
+      "<tr><%= obj %></tr>" +
+    "</tbody>" +
+  "</table>";
 
+var itemTemplate = "" +
+"<td style='background:#f5f5f5;padding:10px 10px 0;font:14px/1.4285714 Arial,sans-serif;'>" +
+  "<table style='width:100%;border-collapse:collapse;'>" +
+    "<tbody>" +
+      "<tr>" +
+        "<td style='padding:5px 0 15px;color:#707070;'>" +
+          "<table style='width:100%;border-collapse:collapse;'><tbody>" +
+            "<tr>" +
+              "<td style='padding:0'><%= obj.relatedLink.userName %></td>" +
+              "<td style='padding:0'></td>" +
+              "<td style='text-align:right;width:100px;padding:0;'>" +
+                "<a href='<%= obj.baseUrl %>#<%= obj.relatedLink.postId %>' style='color:#3b73af;text-decoration:none;' target='_blank'>link to post</a>" +
+              "</td>" +
+            "</tr>" +
+          "</tbody></table>" +
+        "</td>" +
+      "</tr>" +
+      "<tr>" +
+        "<td style='font:14px/1.4285714 Arial,sans-serif;padding:0;background-color:#ffffff;border-radius:5px;'>" +
+          "<div style='border:1px solid #cccccc;border-radius:5px;padding:20px;'>" +
+            "<p style='margin-bottom:0;margin-top:0;'><%= relatedLink.message %></p>" +
+          "</div>" +
+        "</td>" +
+      "</tr>" +
+      "<tr><td style='padding-top: 10px;'></td></tr>" +
+      "</tbody>" +
+    "</table>" +
+  "</td>";
+
+exports.biuldLinks = function(baseUrl, relatedLinks) {
   var _ = require("underscore");
 
-  return _.foldl(relatedLinks, function(acc, relatedLink) {
-    return _.template(template, {acc: acc, baseUrl: baseUrl, relatedLink: relatedLink});
+  var htmlMessages = _.foldl(relatedLinks, function(acc, relatedLink) {
+    return _.template(itemTemplate, {acc: acc, baseUrl: baseUrl, relatedLink: relatedLink});
   }, "");
+
+  return _.template(commonTemplate, htmlMessages);
 };
